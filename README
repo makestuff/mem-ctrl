@@ -1,0 +1,6 @@
+--------------------------- SIMPLE SDRAM CONTROLLER ----------------------------
+
+A simple SDRAM controller, which just does single word reads and writes. The
+refresh cycles can be scheduled automatically, or they may be explicitly
+requested by external logic. The advantage of the former is simplicity; the
+advantage of the latter is the possibility of deterministic read/write latency.
