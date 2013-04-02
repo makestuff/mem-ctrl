@@ -18,7 +18,6 @@ library ieee;
 
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.rom_data_pkg.all;
 
 architecture rtl of mem_ctrl is
 	type StateType is (
@@ -32,14 +31,10 @@ architecture rtl of mem_ctrl is
 		S_INIT_LMR,
 		S_INIT_LMR_WAIT,
 
-		-- Execute initial writes
-		S_INIT_WRITE0,
-		S_INIT_WRITE1,
-		S_INIT_WRITE2,
-
 		-- Execute a write
 		S_WRITE1,
 		S_WRITE2,
+		S_WRITE3,
 		
 		-- Execute a read
 		S_READ1,
@@ -165,34 +160,7 @@ begin
 			when S_INIT_LMR_WAIT =>
 				count_next <= REFRESH_DELAY;
 				state_next <= S_IDLE;
-				state_next <= S_INIT_WRITE0;
 
-			----------------------------------------------------------------------------------------
-			-- Do writes
-			----------------------------------------------------------------------------------------
-
-			when S_INIT_WRITE0 =>
-				ramCmd_out <= RAM_ACT;
-				ramBank_out <= "00";
-				ramAddr_out <= x"000";
-				state_next <= S_INIT_WRITE1;
-				
-			when S_INIT_WRITE1 =>
-				state_next <= S_INIT_WRITE2;
-				ramCmd_out <= RAM_WRITE;
-				ramData_io <= INIT_DATA(to_integer(unsigned(rowAddr(7 downto 0))));
-				ramAddr_out <= "000" & rowAddr;
-				
-			when S_INIT_WRITE2 =>
-				ramCmd_out <= RAM_PRE;
-				ramAddr_out(10) <= '1';  -- A10=1: Precharge all banks
-				rowAddr_next <= std_logic_vector(unsigned(rowAddr) + 1);
-				if ( rowAddr = "0" & x"ff" ) then
-					state_next <= S_IDLE;
-				else
-					state_next <= S_INIT_WRITE0;
-				end if;
-				
 			-------------------------------------------------------------------------------------------
 			-- Do a write
 			-------------------------------------------------------------------------------------------
@@ -204,6 +172,9 @@ begin
 				ramAddr_out <= "000" & rowAddr;
 
 			when S_WRITE2 =>
+				state_next <= S_WRITE3;
+
+			when S_WRITE3 =>
 				ramCmd_out <= RAM_PRE;
 				ramAddr_out(10) <= '1';  -- A10=1: Precharge all banks
 				state_next <= S_IDLE;
