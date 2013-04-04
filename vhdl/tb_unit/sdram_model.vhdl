@@ -2,16 +2,16 @@
 -- Copyright (C) 2012 Chris McClelland
 --
 -- This program is free software: you can redistribute it and/or modify
--- it under the terms of the GNU General Public License as published by
+-- it under the terms of the GNU Lesser General Public License as published by
 -- the Free Software Foundation, either version 3 of the License, or
 -- (at your option) any later version.
 --
 -- This program is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--- GNU General Public License for more details.
+-- GNU Lesser General Public License for more details.
 --
--- You should have received a copy of the GNU General Public License
+-- You should have received a copy of the GNU Lesser General Public License
 -- along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --
 library ieee;
@@ -22,7 +22,7 @@ use ieee.std_logic_textio.all;
 use std.textio.all;
 use work.hex_util.all;
 
-entity sdram is
+entity sdram_model is
 	port(
 		-- SDRAM interface
 		ramClk_in  : in    std_logic;
@@ -33,7 +33,7 @@ entity sdram is
 	);
 end entity;
 
-architecture behavioural of sdram is
+architecture behavioural of sdram_model is
 	constant UPPER_BOUND : natural := 4*4096*512-1;
 	type MemType is array (0 to UPPER_BOUND) of std_logic_vector(15 downto 0);
 	constant RAM_ACT     : std_logic_vector(2 downto 0) := "011";
