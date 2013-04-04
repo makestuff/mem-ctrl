@@ -30,7 +30,7 @@ architecture behavioural of mem_ctrl_tb is
 	-- Clocks
 	signal sysClk     : std_logic;  -- main system clock
 	signal dispClk    : std_logic;  -- display version of sysClk, which transitions 4ns before it
-	signal reset     : std_logic;
+	signal reset      : std_logic;
 
 	-- Client interface
 	signal mcAutoMode : std_logic;
