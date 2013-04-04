@@ -24,7 +24,7 @@ use work.hex_util.all;
 use work.mem_ctrl_pkg.all;
 
 entity mem_ctrl_tb is
-end mem_ctrl_tb;
+end entity;
 
 architecture behavioural of mem_ctrl_tb is
 	-- Clocks
