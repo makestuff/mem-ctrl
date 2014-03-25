@@ -35,11 +35,15 @@ architecture rtl of mem_ctrl is
 		S_WRITE1,
 		S_WRITE2,
 		S_WRITE3,
+		S_WRITE4,
+		S_WRITE5,
 		
 		-- Execute a read
 		S_READ1,
 		S_READ2,
 		S_READ3,
+		S_READ4,
+		S_READ5,
 
 		-- Do a refresh operation
 		S_REFRESH,
@@ -107,12 +111,12 @@ begin
 		-- Client interface defaults
 		mcReady_out <= '0';
 		mcRDV_out <= '0';
-		mcData_out <= (others => '0');
+		mcData_out <= (others => 'X');
 
 		-- SDRAM interface defaults
 		ramCmd_out <= RAM_NOP;
-		ramBank_out <= (others => 'Z');
-		ramAddr_out <= (others => 'Z');
+		ramBank_out <= (others => 'X');
+		ramAddr_out <= (others => 'X');
 		ramData_io  <= (others => 'Z');
 		
 		case state is
@@ -165,37 +169,59 @@ begin
 			-- Do a write
 			-------------------------------------------------------------------------------------------
 
+			-- Delay to meet tRCD >= 20ns
 			when S_WRITE1 =>
 				state_next <= S_WRITE2;
+
+			-- Issue WRITE command
+			when S_WRITE2 =>
+				state_next <= S_WRITE3;
 				ramCmd_out <= RAM_WRITE;
 				ramData_io <= wrData;
 				ramAddr_out <= "000" & rowAddr;
 
-			when S_WRITE2 =>
-				state_next <= S_WRITE3;
-
+			-- Delay to meet tRAS >= 44ns
 			when S_WRITE3 =>
+				state_next <= S_WRITE4;
+
+			-- Issue PRECHARGE command
+			when S_WRITE4 =>
+				state_next <= S_WRITE5;
 				ramCmd_out <= RAM_PRE;
 				ramAddr_out(10) <= '1';  -- A10=1: Precharge all banks
+
+			-- Delay to meet tRC >= 66ns
+			when S_WRITE5 =>
 				state_next <= S_IDLE;
-				
+
 			-------------------------------------------------------------------------------------------
 			-- Do a read
 			-------------------------------------------------------------------------------------------
 
+			-- Delay to meet tRCD >= 20ns
 			when S_READ1 =>
 				state_next <= S_READ2;
+				
+			-- Issue READ command
+			when S_READ2 =>
+				state_next <= S_READ3;
 				ramCmd_out <= RAM_READ;
 				ramAddr_out <= "000" & rowAddr;  -- no auto precharge
 
-			when S_READ2 =>
-				state_next <= S_READ3;
-
+			-- Delay to meet tRAS >= 44ns
 			when S_READ3 =>
+				state_next <= S_READ4;
+
+			-- Issue PRECHARGE command
+			when S_READ4 =>
+				state_next <= S_READ5;
 				ramCmd_out <= RAM_PRE;
 				ramAddr_out(10) <= '1';  -- A10=1: Precharge all banks
 				mcData_out <= ramData_io;
 				mcRDV_out <= '1';
+
+			-- Delay to meet tRC >= 66ns
+			when S_READ5 =>
 				state_next <= S_IDLE;
 
 			-------------------------------------------------------------------------------------------

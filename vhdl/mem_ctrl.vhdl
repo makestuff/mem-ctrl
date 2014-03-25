@@ -24,7 +24,7 @@ entity mem_ctrl is
 	generic (
 		INIT_COUNT     : unsigned(12 downto 0) := "1" & x"2C0";  -- cycles to wait during init
 		REFRESH_DELAY  : unsigned(12 downto 0) := "0" & x"300";  -- gap between refresh cycles
-		REFRESH_LENGTH : unsigned(12 downto 0) := "0" & x"002"   -- length of a refresh cycle
+		REFRESH_LENGTH : unsigned(12 downto 0) := "0" & x"003"   -- length of a refresh cycle
 	);
 	port(
 		clk_in        : in    std_logic;
