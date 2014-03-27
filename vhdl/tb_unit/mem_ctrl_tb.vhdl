@@ -53,8 +53,8 @@ begin
 	uut: entity work.mem_ctrl
 		generic map(
 			INIT_COUNT     => "0" & x"004",  --\
-			REFRESH_DELAY  => "0" & x"020",  -- Much longer in real hardware!
-			REFRESH_LENGTH => "0" & x"003"   --/
+			REFRESH_DELAY  => "0" & x"010",  -- Much longer in real hardware!
+			REFRESH_LENGTH => "0" & x"005"   --/
 		)
 		port map(
 			clk_in        => sysClk,
