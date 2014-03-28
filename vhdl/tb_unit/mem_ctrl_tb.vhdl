@@ -28,8 +28,8 @@ end entity;
 
 architecture behavioural of mem_ctrl_tb is
 	-- Clocks
-	signal sysClk     : std_logic;  -- main system clock
-	signal dispClk    : std_logic;  -- display version of sysClk, which transitions 4ns before it
+	signal intClk     : std_logic;  -- main system clock
+	signal extClk     : std_logic;  -- display version of intClk, which transitions 4ns before it
 	signal reset      : std_logic;
 
 	-- Client interface
@@ -57,7 +57,7 @@ begin
 			REFRESH_LENGTH => "0" & x"005"   --/
 		)
 		port map(
-			clk_in        => sysClk,
+			clk_in        => intClk,
 			reset_in      => reset,
 
 			-- Client interface
@@ -81,35 +81,43 @@ begin
 	-- Instantiate the SDRAM model for testing
 	sdram_model: entity work.sdram_model
 		port map(
-			ramClk_in  => sysClk,
+			ramClk_in  => extClk,
 			ramCmd_in  => ramCmd,
 			ramBank_in => ramBank,
 			ramAddr_in => ramAddr,
 			ramData_io => ramDataIO
 		);
 
-	-- Drive the clocks. In simulation, sysClk lags 4ns behind dispClk, to give a visual hold time
-	-- for signals in GTKWave.
+	-- Drive the internal clock.
 	process
 	begin
-		sysClk <= '0';
-		dispClk <= '0';
-		wait for 16 ns;
+		intClk <= '0';
 		loop
-			dispClk <= not(dispClk);  -- first dispClk transitions
-			wait for 4 ns;
-			sysClk <= not(sysClk);  -- then sysClk transitions, 4ns later
-			wait for 6 ns;
+			wait for 6.944 ns;
+			intClk <= not(intClk);
 		end loop;
 	end process;
+	
+	-- Drive the external clock.
+	process
+	begin
+		extClk <= '0';
+		wait for 10.416 ns; -- 3/4
+		wait for 1.771 ns;
+		loop
+			wait for 6.944 ns;
+			extClk <= not(extClk);
+		end loop;
+	end process;
+	
 
 	-- Deassert the synchronous reset a couple of cycles after startup.
 	--
 	process
 	begin
 		reset <= '1';
-		wait until rising_edge(sysClk);
-		wait until rising_edge(sysClk);
+		wait until rising_edge(intClk);
+		wait until rising_edge(intClk);
 		reset <= '0';
 		wait;
 	end process;
@@ -172,7 +180,7 @@ begin
 		mcAddr <= (others => 'X');
 		mcDataWr <= (others => 'X');
 		wait until falling_edge(reset);
-		wait until rising_edge(sysClk);
+		wait until rising_edge(intClk);
 		while ( not endfile(inFile) ) loop
 			readline(inFile, inLine);
 			while ( inLine.all'length = 0 or inLine.all(1) = '#' or inLine.all(1) = ht or inLine.all(1) = ' ' ) loop
@@ -182,7 +190,7 @@ begin
 			mcCmd <= to_mcCmd(inLine.all(3));
 			mcAddr <= to_3(inLine.all(5)) & to_4(inLine.all(6)) & to_4(inLine.all(7)) & to_4(inLine.all(8)) & to_4(inLine.all(9)) & to_4(inLine.all(10));
 			mcDataWr <= to_4(inLine.all(12)) & to_4(inLine.all(13)) & to_4(inLine.all(14)) & to_4(inLine.all(15));
-			wait for 10 ns;
+			wait until falling_edge(intClk);
 			write(outLine, mcAutoMode);
 			write(outLine, ' ');
 			write(outLine, mcReady);
@@ -211,7 +219,7 @@ begin
 			write(outLine, ' ');
 			write(outLine, from_4(ramDataIO(15 downto 12)) & from_4(ramDataIO(11 downto 8)) & from_4(ramDataIO(7 downto 4)) & from_4(ramDataIO(3 downto 0)));
 			writeline(outFile, outLine);
-			wait for 10 ns;
+			wait until rising_edge(intClk);
 		end loop;
 		mcAutoMode <= '1';
 		mcCmd <= MC_NOP;
