@@ -70,6 +70,8 @@ architecture rtl of mem_ctrl is
 	signal count_next     : unsigned(12 downto 0);
 	signal rowAddr        : std_logic_vector(8 downto 0) := (others => '0');
 	signal rowAddr_next   : std_logic_vector(8 downto 0);
+	signal bankAddr       : std_logic_vector(1 downto 0) := (others => '0');
+	signal bankAddr_next  : std_logic_vector(1 downto 0);
 	signal wrData         : std_logic_vector(15 downto 0) := (others => '0');
 	signal wrData_next    : std_logic_vector(15 downto 0);
 begin
@@ -81,22 +83,27 @@ begin
 				state <= S_INIT_WAIT;
 				count <= INIT_COUNT;
 				rowAddr <= (others => '0');
+				bankAddr <= (others => '0');
 				wrData <= (others => '0');
 			else
 				state <= state_next;
 				count <= count_next;
 				rowAddr <= rowAddr_next;
+				bankAddr <= bankAddr_next;
 				wrData <= wrData_next;
 			end if;
 		end if;
 	end process;
 
 	-- Next state logic
-	process(state, count, mcAutoMode_in, mcCmd_in, mcAddr_in, mcData_in, rowAddr, wrData, ramData_io)
+	process(
+		state, count, mcAutoMode_in, mcCmd_in, mcAddr_in, mcData_in, rowAddr, bankAddr, wrData,
+		ramData_io)
 	begin
 		-- Internal signal defaults
 		state_next <= state;
 		rowAddr_next <= rowAddr;
+		bankAddr_next <= bankAddr;
 		wrData_next <= wrData;
 		if ( count = 0 ) then
 			count_next <= count;
@@ -107,12 +114,12 @@ begin
 		-- Client interface defaults
 		mcReady_out <= '0';
 		mcRDV_out <= '0';
-		mcData_out <= (others => '0');
+		mcData_out <= (others => 'X');
 
 		-- SDRAM interface defaults
 		ramCmd_out <= RAM_NOP;
-		ramBank_out <= (others => 'Z');
-		ramAddr_out <= (others => 'Z');
+		ramBank_out <= (others => 'X');
+		ramAddr_out <= (others => 'X');
 		ramData_io  <= (others => 'Z');
 		
 		case state is
@@ -169,6 +176,7 @@ begin
 				state_next <= S_WRITE2;
 				ramCmd_out <= RAM_WRITE;
 				ramData_io <= wrData;
+				ramBank_out <= bankAddr;
 				ramAddr_out <= "000" & rowAddr;
 
 			when S_WRITE2 =>
@@ -186,6 +194,7 @@ begin
 			when S_READ1 =>
 				state_next <= S_READ2;
 				ramCmd_out <= RAM_READ;
+				ramBank_out <= bankAddr;
 				ramAddr_out <= "000" & rowAddr;  -- no auto precharge
 
 			when S_READ2 =>
@@ -230,6 +239,7 @@ begin
 							ramAddr_out <= mcAddr_in(21 downto 10);
 							ramBank_out <= mcAddr_in(9 downto 8);
 							rowAddr_next <= mcAddr_in(22) & mcAddr_in(7 downto 0);
+							bankAddr_next <= mcAddr_in(9 downto 8);
 							
 						when MC_WR =>
 							state_next <= S_WRITE1;
@@ -237,6 +247,7 @@ begin
 							ramAddr_out <= mcAddr_in(21 downto 10);
 							ramBank_out <= mcAddr_in(9 downto 8);
 							rowAddr_next <= mcAddr_in(22) & mcAddr_in(7 downto 0);
+							bankAddr_next <= mcAddr_in(9 downto 8);
 							wrData_next <= mcData_in;
 							
 						when others =>
